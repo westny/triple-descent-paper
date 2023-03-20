@@ -8,6 +8,17 @@ from utils import rot
 from utils import get_data, hinge_regression, hinge_classification
 from model import FullyConnected
 import argparse
+from torch.utils.data import Dataset, DataLoader
+
+class MyDataset(Dataset):
+    def __init__(self, data):
+        self.inp, self.target = data[0][0], data[0][1]
+
+    def __len__(self):
+        return len(self.inp)
+
+    def __getitem__(self, idx):
+        return self.inp[idx], self.target[idx]
 
 
 def train_and_test(model, tr_data, te_data, crit, task, opt, epochs, checkpoints):
@@ -22,7 +33,7 @@ def train_and_test(model, tr_data, te_data, crit, task, opt, epochs, checkpoints
             out = model(x)
             loss = crit(out, y)
             loss.backward()
-            epoch_loss += loss.item() / len(tr_data)
+            epoch_loss += loss.item() / len(x)
             opt.step()
         if epoch in checkpoints:
             tr_losses.append(epoch_loss)
@@ -84,10 +95,12 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--d', default=2, type=int)
     parser.add_argument('--n', default=100, type=int)
+    parser.add_argument('--batch-size', default=100, type=int)
     parser.add_argument('--n_test', default=1000, type=int)
     parser.add_argument('--noise', default=0.1, type=float)
     parser.add_argument('--test_noise', default=True, type=bool)
     parser.add_argument('--n_classes', default=None, type=int)
+    parser.add_argument('--optim', default="sgd", type=str)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--mom', default=0.9, type=float)
     parser.add_argument('--wd', default=0., type=float)
@@ -132,10 +145,11 @@ if __name__ == '__main__':
                                  out_dim=args.n_classes, activation=args.activation)  # .to(device)
 
     bs = min(args.bs, args.n)
-    n_batches = 128  # int(args.n / bs)
-    tr_data = get_data(args.dataset, args.task, n_batches, bs, args.d, args.noise, n_classes=args.n_classes,
-                       teacher=teacher)
+    n_batches = int(args.n / bs)
+    tr_data = get_data(args.dataset, args.task, 1, bs, args.d, args.noise, n_classes=args.n_classes, teacher=teacher)
 
+    ds = MyDataset(tr_data)
+    train_dl = DataLoader(ds, batch_size=min(bs, args.batch_size), shuffle=True)
 
     test_noise = args.noise if args.test_noise else 0
     te_data = get_data(args.dataset, args.task, 1, args.n_test, args.d, test_noise, n_classes=args.n_classes,
@@ -151,8 +165,18 @@ if __name__ == '__main__':
         torch.manual_seed(seed)
         student = FullyConnected(width=args.width, n_layers=args.depth, in_dim=args.d, out_dim=args.n_classes,
                                  activation=args.activation).to(device)
-        opt = torch.optim.SGD(student.parameters(), lr=args.lr, momentum=args.mom, weight_decay=args.wd)
-        tr_loss_hist, te_loss_hist, te_acc_hist = train_and_test(student, tr_data, te_data, crit, args.task, opt,
+        if args.optim == "sgd":
+            opt = torch.optim.SGD(student.parameters(), lr=args.lr, momentum=args.mom, weight_decay=args.wd)
+        elif args.optim == "adam":
+            if args.wd > 0:
+                opt = torch.optim.AdamW(student.parameters(), lr=args.lr, weight_decay=args.wd)
+            elif args.mom > 0.:
+                opt = torch.optim.NAdam(student.parameters(), lr=args.lr, momentum_decay=args.mom)
+            else:
+                opt = torch.optim.Adam(student.parameters(), lr=args.lr)
+        else:
+            raise NotImplementedError
+        tr_loss_hist, te_loss_hist, te_acc_hist = train_and_test(student, train_dl, te_data, crit, args.task, opt,
                                                                  args.epochs, checkpoints)
         tr_losses.append(tr_loss_hist)
         te_losses.append(te_loss_hist)

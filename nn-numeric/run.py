@@ -29,7 +29,7 @@ python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --width {
 
 
 def create_script_simple(params):
-    script = '''python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --width {width} --num_seeds {num_seeds} --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 1 --task regression --no_cuda False --depth {depth} --wd {wd} --activation {activation} --dataset {dataset}
+    script = '''python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --batch-size {n} --width {width} --num_seeds {num_seeds} --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 1 --task regression --depth {depth} --wd {wd} --activation {activation} --dataset {dataset}
 '''.format(**params)
     with open('{}.sh'.format(params['name']), 'w') as f:
         f.write(script)
@@ -46,19 +46,23 @@ if __name__ == '__main__':
     copy_py(exp_dir)
     os.chdir(exp_dir)
 
-    widths = np.unique(np.logspace(0, 2.5, 20).astype(int))
-    ns = np.logspace(1, 5, 20).astype(int)
+    #widths = np.unique(np.logspace(0, 2.5, 20).astype(int))
+    #ns = np.logspace(1, 5, 20).astype(int)
+
+    widths = np.unique(np.logspace(4, 8, 13, base=2).astype(int))
+    ns = np.logspace(5, 17, 13, base=2).astype(int)
+
     grid = collections.OrderedDict({
         'width': widths,
         'n': ns,
-        'depth': [1, 2],
-        'wd': [0., 0.05],
-        'activation': ['tanh'],
+        'depth': [1],
+        'wd': [0.], # [0., 0.05],
+        'activation': ['relu'],
         'dataset': ['random'],
-        'noise': [0, 0.5, 5],
+        'noise': [0.], #[0, 0.5, 5],
         'lr': [0.01],
         'd': [14 * 14],
-        'num_seeds': [10],
+        'num_seeds': [5],
         'test_noise': [False],
         'loss_type': ['mse'],
         'epochs': [1000],
