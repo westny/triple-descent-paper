@@ -29,7 +29,7 @@ python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --width {
 
 
 def create_script_simple(params):
-    script = '''python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --width {width} --num_seeds {num_seeds} --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 1 --task regression --no_cuda False --depth {depth} --wd {wd} --activation {activation} --dataset {dataset}
+    script = '''python main.py --name {name} --epochs {epochs} --noise {noise} --n {n} --width {width} --num_seeds {num_seeds} --lr {lr} --d {d} --test_noise {test_noise} --loss_type {loss_type} --n_classes 1 --task regression --depth {depth} --wd {wd} --activation {activation} --dataset {dataset}
 '''.format(**params)
     with open('{}.sh'.format(params['name']), 'w') as f:
         f.write(script)
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     for i, params in enumerate(dict_product(grid)):
         torch.save(grid, 'params.pkl')
-        params['name'] = '{:06d}'.format(i)
+        params['name'] = str(i) #'{:06d}'.format(i)
         #create_script(params)
         create_script_simple(params)
         #file_name = '{}.sbatch'.format(params['name'])
