@@ -45,20 +45,23 @@ if __name__ == '__main__':
     os.mkdir(exp_dir)
     copy_py(exp_dir)
     os.chdir(exp_dir)
+    # widths = np.unique(np.logspace(0, 2.5, 20).astype(int))
+    # ns = np.logspace(1, 5, 20).astype(int)
 
-    widths = np.unique(np.logspace(0, 2.5, 20).astype(int))
-    ns = np.logspace(1, 5, 20).astype(int)
+    widths = np.unique(np.logspace(4, 8, 13, base=2).astype(int))
+    ns = np.logspace(5, 17, 13, base=2).astype(int)
+    
     grid = collections.OrderedDict({
         'width': widths,
         'n': ns,
-        'depth': [1, 2],
-        'wd': [0., 0.05],
-        'activation': ['tanh'],
+        'depth': [1],
+        'wd': [0.],
+        'activation': ['relu'],
         'dataset': ['random'],
-        'noise': [0, 0.5, 5],
+        'noise': [0],
         'lr': [0.01],
         'd': [14 * 14],
-        'num_seeds': [10],
+        'num_seeds': [5],
         'test_noise': [False],
         'loss_type': ['mse'],
         'epochs': [1000],
